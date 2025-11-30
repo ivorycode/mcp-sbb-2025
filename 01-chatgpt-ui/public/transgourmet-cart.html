@@ -53,6 +53,18 @@
         border: 1px solid #e2e8f0;
       }
 
+      .cart-summary-content {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 16px;
+      }
+
+      .cart-summary-info {
+        flex: 1;
+      }
+
       .cart-summary p {
         margin: 0;
         font-size: 0.95rem;
@@ -67,7 +79,6 @@
       }
 
       .submit-button {
-        margin-top: 16px;
         padding: 12px 24px;
         background: #111bf5;
         color: white;
@@ -76,8 +87,8 @@
         font-size: 1rem;
         font-weight: 600;
         cursor: pointer;
-        width: 100%;
         transition: background-color 0.2s;
+        flex-shrink: 0;
       }
 
       .submit-button:hover:not(:disabled) {
@@ -196,9 +207,13 @@
     <main>
       <h2 id="cart-title">Transgourmet Warenkorb</h2>
       <div id="cart-summary" class="cart-summary" style="display: none;">
-        <p id="position-count"></p>
-        <span id="total-price" class="total-price"></span>
-        <button id="submit-button" class="submit-button">Submit Cart</button>
+        <div class="cart-summary-content">
+          <div class="cart-summary-info">
+            <p id="position-count"></p>
+            <span id="total-price" class="total-price"></span>
+          </div>
+          <button id="submit-button" class="submit-button">Submit Cart</button>
+        </div>
       </div>
       <ul id="cart-positions-list" class="cart-positions-list"></ul>
     </main>
@@ -302,15 +317,22 @@
           articleNumber.className = "position-article-number";
           articleNumber.textContent = `Article: ${position.articleNumber || "N/A"}`;
 
+          const quantity = document.createElement("div");
+          quantity.className = "position-article-number";
+          quantity.textContent = `Quantity: ${position.quantity || 0}`;
+
           const price = document.createElement("div");
           price.className = "position-price";
           const priceValue = position.price || 0;
+          const quantityValue = position.quantity || 1;
+          const totalPrice = priceValue * quantityValue;
           price.textContent = priceValue > 0 
-            ? `CHF ${priceValue.toFixed(2)}` 
+            ? `CHF ${totalPrice.toFixed(2)} (${priceValue.toFixed(2)} × ${quantityValue})` 
             : "Price not available";
 
           info.appendChild(description);
           info.appendChild(articleNumber);
+          info.appendChild(quantity);
           info.appendChild(price);
 
           li.appendChild(image);

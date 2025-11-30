@@ -220,6 +220,9 @@ export function getCartItemCount(username: string): number {
 export function submitCart(username: string): string {
 	const orderId = randomUUID();
 	// Clear the cart after submission
+	console.log("*".repeat(20));
+	console.log("Submitting cart for username:", username, "with order ID:", orderId);
+	console.log("*".repeat(20));
 	clearCart(username);
 	return orderId;
 }
