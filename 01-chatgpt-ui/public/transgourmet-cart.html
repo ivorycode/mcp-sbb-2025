@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Transgourmet Cart</title>
+    <style>
+      :root {
+        color: #0b0b0f;
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
+      }
+
+      html,
+      body {
+        width: 100%;
+        min-height: 100%;
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        padding: 16px;
+        background: #f6f8fb;
+      }
+
+      main {
+        width: 100%;
+        max-width: 600px;
+        min-height: 260px;
+        margin: 0 auto;
+        background: #fff;
+        border-radius: 16px;
+        padding: 20px;
+        box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
+      }
+
+      h2 {
+        margin: 0 0 16px;
+        font-size: 1.25rem;
+        color: #0b0b0f;
+      }
+
+      .total-price {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #111bf5;
+      }
+
+      .cart-summary {
+        margin-bottom: 20px;
+        padding: 16px;
+        background: #f2f4fb;
+        border-radius: 12px;
+        border: 1px solid #e2e8f0;
+      }
+
+      .cart-summary p {
+        margin: 0;
+        font-size: 0.95rem;
+        color: #6c768a;
+      }
+
+      .cart-summary .total-price {
+        margin-top: 8px;
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #111bf5;
+      }
+
+      .submit-button {
+        margin-top: 16px;
+        padding: 12px 24px;
+        background: #111bf5;
+        color: white;
+        border: none;
+        border-radius: 10px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        width: 100%;
+        transition: background-color 0.2s;
+      }
+
+      .submit-button:hover:not(:disabled) {
+        background: #0e15d4;
+      }
+
+      .submit-button:disabled {
+        background: #6c768a;
+        cursor: not-allowed;
+      }
+
+      .loading-spinner {
+        display: inline-block;
+        width: 40px;
+        height: 40px;
+        border: 4px solid #e2e8f0;
+        border-top-color: #111bf5;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      .loading-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 40px 20px;
+        gap: 16px;
+      }
+
+      .loading-container p {
+        margin: 0;
+        color: #6c768a;
+        font-size: 0.95rem;
+      }
+
+      .cart-positions-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .cart-position-item {
+        background: #f2f4fb;
+        border-radius: 12px;
+        padding: 16px;
+        display: flex;
+        flex-direction: row;
+        gap: 16px;
+        align-items: center;
+        border: 1px solid #e2e8f0;
+      }
+
+      .cart-position-item:hover {
+        box-shadow: 0 4px 8px rgba(15, 23, 42, 0.1);
+      }
+
+      .position-image {
+        width: 80px;
+        height: 80px;
+        object-fit: cover;
+        border-radius: 8px;
+        background: #fff;
+        flex-shrink: 0;
+      }
+
+      .position-info {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        flex: 1;
+      }
+
+      .position-description {
+        font-size: 1rem;
+        font-weight: 500;
+        color: #0b0b0f;
+        margin-bottom: 4px;
+      }
+
+      .position-article-number {
+        font-family: monospace;
+        font-size: 0.875rem;
+        color: #6c768a;
+      }
+
+      .position-price {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #0b0b0f;
+      }
+
+      .empty-state {
+        text-align: center;
+        padding: 40px 20px;
+        color: #6c768a;
+      }
+
+      .empty-state p {
+        margin: 0;
+        font-size: 0.95rem;
+      }
+
+    </style>
+  </head>
+  <body>
+    <main>
+      <h2 id="cart-title">Transgourmet Warenkorb</h2>
+      <div id="cart-summary" class="cart-summary" style="display: none;">
+        <p id="position-count"></p>
+        <span id="total-price" class="total-price"></span>
+        <button id="submit-button" class="submit-button">Submit Cart</button>
+      </div>
+      <ul id="cart-positions-list" class="cart-positions-list"></ul>
+    </main>
+
+    <script type="module">
+      const listEl = document.querySelector("#cart-positions-list");
+      const summaryEl = document.querySelector("#cart-summary");
+      const positionCountEl = document.querySelector("#position-count");
+      const totalPriceEl = document.querySelector("#total-price");
+      const cartTitleEl = document.querySelector("#cart-title");
+      const submitButtonEl = document.querySelector("#submit-button");
+
+      let cart =
+        window.openai?.toolOutput?.cart ?? { positions: [] };
+      let isLoading = !cart || cart.positions === undefined;
+
+      const showLoading = () => {
+        listEl.innerHTML = `
+          <div class="loading-container">
+            <div class="loading-spinner"></div>
+            <p>Loading cart...</p>
+          </div>
+        `;
+        summaryEl.style.display = "none";
+      };
+
+      const calculateTotals = (positions) => {
+        const totalPositions = positions.length;
+        const totalItems = positions.reduce(
+          (sum, pos) => sum + (pos.quantity || 0),
+          0
+        );
+        const totalPrice = positions.reduce(
+          (sum, pos) => sum + ((pos.price || 0) * (pos.quantity || 1)),
+          0
+        );
+        return { totalPositions, totalItems, totalPrice };
+      };
+
+      const render = () => {
+        listEl.innerHTML = "";
+
+        if (isLoading) {
+          showLoading();
+          return;
+        }
+
+        const positions = cart?.positions ?? [];
+        const { totalPositions, totalPrice } = calculateTotals(positions);
+
+        // Update title with username
+        const username = cart?.username || "";
+        if (username) {
+          cartTitleEl.textContent = `Transgourmet Warenkorb (${username})`;
+        } else {
+          cartTitleEl.textContent = "Transgourmet Warenkorb";
+        }
+
+        // Update summary with position count and total price
+        if (totalPositions > 0) {
+          summaryEl.style.display = "block";
+          positionCountEl.textContent = `${totalPositions} ${totalPositions === 1 ? 'position' : 'positions'}`;
+          if (totalPrice > 0) {
+            totalPriceEl.textContent = `Total: CHF ${totalPrice.toFixed(2)}`;
+          } else {
+            totalPriceEl.textContent = "";
+          }
+        } else {
+          summaryEl.style.display = "none";
+        }
+
+        if (positions.length === 0) {
+          const emptyState = document.createElement("div");
+          emptyState.className = "empty-state";
+          emptyState.innerHTML = '<p>Loading cart ...</p>';
+          listEl.appendChild(emptyState);
+          return;
+        }
+
+        positions.forEach((position) => {
+          const li = document.createElement("li");
+          li.className = "cart-position-item";
+
+          // Product image
+          const image = document.createElement("img");
+          image.className = "position-image";
+          image.src = position.imageUrl || "";
+          image.alt = position.description || `Product ${position.articleNumber}`;
+          image.onerror = function() {
+            this.style.display = "none";
+          };
+
+          const info = document.createElement("div");
+          info.className = "position-info";
+
+          const description = document.createElement("div");
+          description.className = "position-description";
+          description.textContent = position.description || "No description available";
+
+          const articleNumber = document.createElement("div");
+          articleNumber.className = "position-article-number";
+          articleNumber.textContent = `Article: ${position.articleNumber || "N/A"}`;
+
+          const price = document.createElement("div");
+          price.className = "position-price";
+          const priceValue = position.price || 0;
+          price.textContent = priceValue > 0 
+            ? `CHF ${priceValue.toFixed(2)}` 
+            : "Price not available";
+
+          info.appendChild(description);
+          info.appendChild(articleNumber);
+          info.appendChild(price);
+
+          li.appendChild(image);
+          li.appendChild(info);
+          listEl.appendChild(li);
+        });
+      };
+
+      const updateFromResponse = (response) => {
+        if (response?.structuredContent?.cart) {
+          cart = response.structuredContent.cart;
+          isLoading = false;
+          render();
+        }
+      };
+
+      const handleSetGlobals = (event) => {
+        const globals = event.detail?.globals;
+        if (!globals?.toolOutput?.cart) return;
+        cart = globals.toolOutput.cart;
+        isLoading = false;
+        render();
+      };
+
+      window.addEventListener("openai:set_globals", handleSetGlobals, {
+        passive: true,
+      });
+
+      const handleSubmitCart = async () => {
+        const username = cart?.username;
+        if (!username) {
+          alert("Cannot submit cart: username not available");
+          return;
+        }
+
+        if (cart?.positions?.length === 0) {
+          alert("Cannot submit cart: cart is empty");
+          return;
+        }
+
+        // Disable button during submission
+        submitButtonEl.disabled = true;
+        submitButtonEl.textContent = "Submitting...";
+
+        try {
+          if (window.openai?.callTool) {
+            const response = await window.openai.callTool("submit_transgourmet_cart", {
+              username: username,
+            });
+            
+            // Show success message
+            const message = response?.content?.[0]?.text || "Cart submitted successfully";
+            alert(message);
+            
+            // Refresh cart after submission (cart is cleared after submission)
+            if (window.openai?.callTool) {
+              const cartResponse = await window.openai.callTool("get_transgourmet_cart", {
+                username: username,
+              });
+              updateFromResponse(cartResponse);
+            } else {
+              // Fallback: clear cart locally
+              cart = { positions: [], username: username };
+              isLoading = false;
+              render();
+            }
+          } else {
+            alert("Tool calling not available");
+          }
+        } catch (error) {
+          console.error("Error submitting cart:", error);
+          alert(`Error submitting cart: ${error.message || "Unknown error"}`);
+        } finally {
+          submitButtonEl.disabled = false;
+          submitButtonEl.textContent = "Submit Cart";
+        }
+      };
+
+      submitButtonEl.addEventListener("click", handleSubmitCart);
+
+      render();
+    </script>
+  </body>
+</html>
+

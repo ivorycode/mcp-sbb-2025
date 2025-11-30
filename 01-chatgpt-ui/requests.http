@@ -1,0 +1,9 @@
+### GET request to example server
+# @no-cookie-jar
+GET https://webshop.transgourmet.ch/api/webshop/pub/articles/095210
+
+
+###
+
+
+GET https://webshop.transgourmet.ch/api/webshop/hub/bgh/articledetails/095210

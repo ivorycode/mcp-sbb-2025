@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Transgourmet Products</title>
+    <style>
+      :root {
+        color: #0b0b0f;
+        font-family: "Inter", system-ui, -apple-system, sans-serif;
+      }
+
+      html,
+      body {
+        width: 100%;
+        min-height: 100%;
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        padding: 16px;
+        background: #f6f8fb;
+      }
+
+      main {
+        width: 100%;
+        max-width: 600px;
+        min-height: 260px;
+        margin: 0 auto;
+        background: #fff;
+        border-radius: 16px;
+        padding: 20px;
+        box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
+      }
+
+      h2 {
+        margin: 0 0 16px;
+        font-size: 1.25rem;
+        color: #0b0b0f;
+      }
+
+      .loading-spinner {
+        display: inline-block;
+        width: 40px;
+        height: 40px;
+        border: 4px solid #e2e8f0;
+        border-top-color: #111bf5;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      .loading-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 40px 20px;
+        gap: 16px;
+      }
+
+      .loading-container p {
+        margin: 0;
+        color: #6c768a;
+        font-size: 0.95rem;
+      }
+
+      .products-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .product-item {
+        background: #f2f4fb;
+        border-radius: 12px;
+        padding: 16px;
+        display: flex;
+        flex-direction: row;
+        gap: 16px;
+        border: 1px solid #e2e8f0;
+      }
+
+      .product-image {
+        width: 120px;
+        height: 120px;
+        object-fit: contain;
+        border-radius: 8px;
+        background: #fff;
+        flex-shrink: 0;
+      }
+
+      .product-content {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        flex: 1;
+      }
+
+      .product-item:hover {
+        box-shadow: 0 4px 8px rgba(15, 23, 42, 0.1);
+      }
+
+      .product-description {
+        font-size: 1rem;
+        font-weight: 500;
+        color: #0b0b0f;
+      }
+
+      .product-details {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.875rem;
+        color: #6c768a;
+      }
+
+      .product-price {
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: #111bf5;
+      }
+
+      .product-number {
+        font-family: monospace;
+        font-size: 0.875rem;
+      }
+
+      .empty-state {
+        text-align: center;
+        padding: 40px 20px;
+        color: #6c768a;
+      }
+
+      .empty-state p {
+        margin: 0;
+        font-size: 0.95rem;
+      }
+
+    </style>
+  </head>
+  <body>
+    <main>
+      <h2 id="products-title">Transgourmet Artikel</h2>
+      <ul id="products-list" class="products-list"></ul>
+    </main>
+
+    <script type="module">
+      const listEl = document.querySelector("#products-list");
+      const titleEl = document.querySelector("#products-title");
+
+      let products =
+        [...(window.openai?.toolOutput?.products ?? [])] || [];
+      let searchTerm = window.openai?.toolOutput?.searchTerm ?? "";
+      let isLoading = products.length === 0;
+
+      const updateTitle = () => {
+        if (searchTerm) {
+          titleEl.textContent = `Transgourmet Artikel: "${searchTerm}"`;
+        } else {
+          titleEl.textContent = "Transgourmet Artikel";
+        }
+      };
+
+      const formatPrice = (price) => {
+        if (typeof price === "number") {
+          return `CHF ${price.toFixed(2)}`;
+        }
+        return price || "N/A";
+      };
+
+      const showLoading = () => {
+        listEl.innerHTML = `
+          <div class="loading-container">
+            <div class="loading-spinner"></div>
+            <p>Artikel werden geladen ...</p>
+          </div>
+        `;
+      };
+
+      const render = () => {
+        listEl.innerHTML = "";
+
+        if (isLoading) {
+          showLoading();
+          return;
+        }
+
+        if (products.length === 0) {
+          const emptyState = document.createElement("div");
+          emptyState.className = "empty-state";
+          emptyState.innerHTML = '<p>No products found.</p>';
+          listEl.appendChild(emptyState);
+          return;
+        }
+
+        products.forEach((product) => {
+          const li = document.createElement("li");
+          li.className = "product-item";
+
+          // Product image
+          if (product.articleImageUrl) {
+            const img = document.createElement("img");
+            img.className = "product-image";
+            img.src = product.articleImageUrl;
+            img.alt = product.description || "Product image";
+            img.onerror = function() {
+              // Hide image if it fails to load
+              this.style.display = "none";
+            };
+            li.appendChild(img);
+          }
+
+          // Product content wrapper
+          const content = document.createElement("div");
+          content.className = "product-content";
+
+          const description = document.createElement("div");
+          description.className = "product-description";
+          description.textContent = product.description || "No description";
+
+          const details = document.createElement("div");
+          details.className = "product-details";
+
+          const articleNumber = document.createElement("span");
+          articleNumber.className = "product-number";
+          articleNumber.textContent = `Article: ${product.articleNumber || "N/A"}`;
+
+          const price = document.createElement("span");
+          price.className = "product-price";
+          price.textContent = formatPrice(product.normalPrice);
+
+          details.appendChild(articleNumber);
+          details.appendChild(price);
+
+          content.appendChild(description);
+          content.appendChild(details);
+          li.appendChild(content);
+          listEl.appendChild(li);
+        });
+      };
+
+      const updateFromResponse = (response) => {
+        if (response?.structuredContent?.products) {
+          products = response.structuredContent.products;
+          searchTerm = response.structuredContent.searchTerm ?? "";
+          isLoading = false;
+          updateTitle();
+          render();
+        }
+      };
+
+      const handleSetGlobals = (event) => {
+        const globals = event.detail?.globals;
+        if (!globals?.toolOutput?.products) return;
+        products = globals.toolOutput.products;
+        searchTerm = globals.toolOutput.searchTerm ?? "";
+        isLoading = false;
+        updateTitle();
+        render();
+      };
+
+      window.addEventListener("openai:set_globals", handleSetGlobals, {
+        passive: true,
+      });
+
+      updateTitle();
+      render();
+    </script>
+  </body>
+</html>
+
