@@ -1,6 +1,14 @@
 ngrok http 8787
 
+https://unconsulted-tyrone-unominous.ngrok-free.dev/mcp
+
 set -x OPENAI_API_KEY ...
+
+nanobot run ./nanobot.yaml
+
+
+
+
 
 
 
@@ -26,6 +34,8 @@ Was ist die aktuelle Zeit?
 
 
 Was ist mein Transgourmet UserName?
+
+
 
 
 

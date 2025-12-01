@@ -3,6 +3,8 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 import {searchTransgourmetCatalog} from './transgourmet-api';
 import { CartApi, Cart, CartDisplay } from './transgourmet-cart-api';
+import {createUIResource} from '@mcp-ui/server';
+import {generateProductsHTML} from './generate-products-html';
 
 // Mocked cart storage: Map with username as key and Cart object as value
 const cartStorage: Map<string, Cart> = new Map();
@@ -43,6 +45,7 @@ const replyWithProducts = (message: string, products = [] as {}[], searchTerm = 
   structuredContent: { products, searchTerm },
 });
 
+
 // Define our MCP agent with tools
 export class MyMCP extends McpAgent {
 	server = new McpServer({
@@ -54,12 +57,8 @@ export class MyMCP extends McpAgent {
   
   
 	async init() {
-
-    console.log('################### 1. Init cartStorage ###################')
-    
     // this.cartStorage.set("jonas.bandi", { positions: [{ articleNumber: "095210", quantity: 1 }, { articleNumber: "022600", quantity: 2 }] });
     
-
     this.server.registerTool(
       "search_transgourmet",
       {
@@ -71,14 +70,26 @@ export class MyMCP extends McpAgent {
         const searchTerm = args?.searchTerm?.trim?.() ?? "";
         
         const products = await searchTransgourmetCatalog(searchTerm);
-        const message =
-          products.length > 0
-            ? `Found ${products.length} product(s) for "${searchTerm}: ${JSON.stringify(products, null, 2)}".`
-            : `No products found for "${searchTerm}".`;
+
+        const htmlContent = generateProductsHTML(products, searchTerm);
+
+        const uiResource = createUIResource({
+          uri: `ui://transgourmet-search/${searchTerm}`,
+          content: {
+            type: "rawHtml",
+            htmlString: htmlContent,
+          },
+          encoding: "text",
+          uiMetadata: {
+            "preferred-frame-size": ["850px", "900px"],
+          },
+        });
+        
         return {
-          content: [{type: "text" as const, text: message}],
-          structuredContent: {products, searchTerm},
-        }
+          content: [
+            uiResource, 
+            {type: "text" as const, text: 'Transgourmet Search Results'}],
+        };
       }
     );
 

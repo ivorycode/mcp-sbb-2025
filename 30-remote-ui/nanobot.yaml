@@ -1,0 +1,9 @@
+agents:
+  my_agent:
+    name: My Custom Agent
+    model: gpt-4.1
+    mcpServers: my_mcp_server
+
+mcpServers:
+  my_mcp_server:
+    url: http://localhost:8788/mcp

@@ -5,10 +5,7 @@ import {registerCredentialsTool} from './tools/credentialsTool.js';
 
 const server = new McpServer({
   name: "local-mcp-server",
-  version: "1.0.0",
-  capabilities: {
-    tools: {},
-  },
+  version: "1.0.0"
 });
 
 registerTimeTool(server);
