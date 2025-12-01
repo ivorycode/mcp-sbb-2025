@@ -1,5 +1,7 @@
 ngrok http 8787
 
+set -x OPENAI_API_KEY ...
+
 
 
 ## Demo
@@ -17,9 +19,28 @@ Bitte
 
 
 
+## Local
+
+Was ist die aktuelle Zeit?
+
+
+
+Was ist mein Transgourmet UserName?
+
+
+
+## Remote
+
+https://remote-plain.reg-e0b.workers.dev/mcp
 
 
 
 
 
+## MCP-UI Demo
 
+https://mcp-aharvard.netlify.app/
+
+"What's the weather in New York?"
+"Show me available seats for flight AA1234"
+"Show me a media player" "Play some video content"

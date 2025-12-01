@@ -1,0 +1,10 @@
+agents:
+  my_agent:
+    name: My Custom Agent
+    model: gpt-4.1
+    mcpServers: my_mcp_server
+
+mcpServers:
+  my_mcp_server:
+    command: npx
+    args: ["tsx", "src/server.ts"]
